@@ -69,14 +69,8 @@ namespace PasswordManager.Classes
 
 		public void RemoveExactMatch(string type, string username)
 		{
-			foreach (var item in PasswordsList)
-			{
-				if (item.PasswordType == type && item.Username == username)
-				{
-					PasswordsList.Remove(item);
-					return;
-				}
-			}
+			var itemToRemove = PasswordsList.FirstOrDefault(p => p.PasswordType == type && p.Username == username);
+			if (itemToRemove != null) PasswordsList.Remove(itemToRemove);
 		}
 		
 		public void Remove(string type = "", string username = "")

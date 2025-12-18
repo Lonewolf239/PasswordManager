@@ -11,34 +11,6 @@ namespace PasswordManager
 	{
 		public static string Version = "1.0";
 
-		public static string GetPassword(bool hide = true)
-		{
-			Console.CursorVisible = true;
-			StringBuilder password = new();
-			while (true)
-			{
-				var key = Console.ReadKey(true);
-				if (key.Key == ConsoleKey.Enter) break;
-				else if (key.Key == ConsoleKey.Backspace)
-				{
-					if (password.Length > 0)
-					{
-						password = password.Remove(password.Length - 1, 1);
-						Console.Write("\u001b[D \u001b[D");
-					}
-				}
-				else if (!char.IsControl(key.KeyChar))
-				{
-					password.Append(key.KeyChar);
-					if (hide) Console.Write('*');
-					else Console.Write(key.KeyChar);
-				}
-			}
-			Console.WriteLine();
-			Console.CursorVisible = false;
-			return password.ToString();
-		}
-
 		private static void OnApplicationClosing(Passwords passwords)
 		{
 			Console.Clear();
@@ -66,10 +38,11 @@ namespace PasswordManager
 			{
 				Console.Clear();
 				Console.Write("Enter password: ");
-				string password = GetPassword(!firstStart);
+				string password = UI.GetPassword(!firstStart);
 				if (firstStart)
 				{
 					passwords.ChangeMainPassword(password);
+					FileManager.Save(passwords.ToString());
 					break;
 				}
 				if (!passwords.CheckMainPassword(password))
@@ -78,17 +51,15 @@ namespace PasswordManager
 					attemps++;
 					if (attemps == 3)
 					{
-						Console.WriteLine("\nDo you want to restore access? [Y/N]: ");
-						Console.WriteLine("WARNING: This action will erase all data.");
-						var recovery = Console.ReadKey(true);
-						if (recovery.Key == ConsoleKey.Y)
+						if (UI.ConfirmAction("\nWARNING: This action will erase all data.\nDo you want to restore access?"))
 						{
 							Console.Write("Enter new password: ");
-							password = GetPassword(false);
+							password = UI.GetPassword(false);
 							passwords.Clear(password);
 							FileManager.Save(passwords.ToString());
 							break;
 						}
+						attemps = 0;
 					}
 					else Thread.Sleep(500);
 				}

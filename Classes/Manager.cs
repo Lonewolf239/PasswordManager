@@ -8,17 +8,17 @@ namespace PasswordManager.Classes
 	public class Manager
 	{
 		private readonly Passwords PasswordsManager;
-		private readonly MenuState MenuState = new();
+		private bool ShouldExit = false;
 
 		public Manager(Passwords passwords) => PasswordsManager = passwords;
 
 		public void MainMenu()
 		{
-			while (!MenuState.ShouldExit)
+			while (!ShouldExit)
 			{
 				try
 				{
-					DisplayMainMenu();
+					UI.DisplayMainMenu();
 					ProcessMenuInput();
 				}
 				catch (Exception ex)
@@ -27,26 +27,6 @@ namespace PasswordManager.Classes
 					UI.PauseMenu();
 				}
 			}
-		}
-
-		private void DisplayMainMenu()
-		{
-			Console.Clear();
-			Console.WriteLine("╔═══════════════════════════════════════════╗");
-			Console.WriteLine($"║              {Colors.Bold}PASSWORD MANAGER{Colors.Reset}             ║");
-			Console.WriteLine("║              By. Lonewolf239              ║");
-			Console.WriteLine("╠═══════════════════════════════════════════╣");
-			Console.WriteLine("║ [1] View Passwords                        ║");
-			Console.WriteLine("║ [2] Add Password                          ║");
-			Console.WriteLine("║ [3] Search                                ║");
-			Console.WriteLine("║ [4] Delete Password                       ║");
-			Console.WriteLine("║ [5] Change Master Password                ║");
-			//Console.WriteLine("║ [6] Sync                                  ║");
-			Console.WriteLine("║ [6] View JSON                             ║");
-			Console.WriteLine("║ [7] About                                 ║");
-			Console.WriteLine("║ [ESC] Exit                                ║");
-			Console.WriteLine("╚═══════════════════════════════════════════╝");
-			Console.WriteLine();
 		}
 
 		private void ProcessMenuInput()
@@ -75,35 +55,12 @@ namespace PasswordManager.Classes
 					ViewJson();
 					break;
 				case ConsoleKey.D7 or ConsoleKey.NumPad7:
-					ShowAbout();
+					UI.ShowAbout();
 					break;
 				case ConsoleKey.Escape:
-					MenuState.ShouldExit = true;
+					ShouldExit = true;
 					break;
 			}
-		}
-
-		private void ShowAbout()
-		{
-			Console.Clear();
-			UI.PrintHeader("ABOUT PROGRAM", false);
-			Console.WriteLine("╠═══════════════════════════════════════════╣");
-			Console.WriteLine($"║ Version: {Program.Version, -33}║");
-			Console.WriteLine("║ Author: Lonewolf239                       ║");
-			Console.WriteLine("║ GitHub: https://github.com/Lonewolf239    ║");
-			Console.WriteLine("║                                           ║");
-			Console.WriteLine("║ A secure application for managing your    ║");
-			Console.WriteLine("║ passwords with encryption support.        ║");
-			Console.WriteLine("║                                           ║");
-			Console.WriteLine("║ Features:                                 ║");
-			Console.WriteLine("║ • View, add, delete passwords             ║");
-			Console.WriteLine("║ • Synchronize password databases          ║");
-			Console.WriteLine("║ • Search functionality                    ║");
-			Console.WriteLine("║ • Master password protection              ║");
-			Console.WriteLine("║ • Secure encryption                       ║");
-			Console.WriteLine("╚═══════════════════════════════════════════╝");
-			Console.WriteLine();
-			UI.PauseMenu();
 		}
 
 		private void ViewPasswords()
@@ -119,7 +76,7 @@ namespace PasswordManager.Classes
 			for (int i = 0; i < PasswordsManager.PasswordsList.Count; i++)
 			{
 				var pwd = PasswordsManager.PasswordsList[i];
-				DisplayPasswordEntry(pwd, i + 1);
+				UI.DisplayPasswordEntry(pwd, i + 1);
 			}
 			UI.PauseMenu();
 		}
@@ -128,12 +85,6 @@ namespace PasswordManager.Classes
 		{
 			Console.Clear();
 			UI.PrintHeader("VIEW JSON");
-			if (PasswordsManager.PasswordsList.Count == 0)
-			{
-				UI.PrintWarning("No passwords found.");
-				UI.PauseMenu();
-				return;
-			}
 			string json = PasswordsManager.ToString();
 			var lines = json.Split('\n');
 			foreach (var line in lines)
@@ -145,27 +96,18 @@ namespace PasswordManager.Classes
 			UI.PauseMenu();
 		}
 
-		private void DisplayPasswordEntry(PasswordData pwd, int index)
-		{
-			Console.WriteLine($"┌─ {Colors.Bold}[{index}]{Colors.Reset} {pwd.PasswordType}");
-			Console.WriteLine($"├─ Username: {pwd.Username}");
-			Console.WriteLine($"├─ Password: {pwd.Password}");
-			Console.WriteLine("└─" + new string('─', 43));
-			Console.WriteLine();
-		}
-
 		private void AppendPassword()
 		{
 			Console.Clear();
 			UI.PrintHeader("ADDING A PASSWORD");
 			try
 			{
-				var (service, username, password) = GetPasswordInput();
-				if (!ValidatePasswordInput(service, username, password)) return;
+				var (service, username, password) = UI.GetPasswordInput();
+				if (!UI.ValidatePasswordInput(service, username, password)) return;
 				if (PasswordExists(service, username))
 				{
 					UI.PrintWarning("The password for this service and user already exists!");
-					if (!ConfirmAction("Do you want to reset this password?"))
+					if (!UI.ConfirmAction("Do you want to reset this password?"))
 					{
 						UI.PrintInfo("The operation has been cancelled.");
 						UI.PauseMenu();
@@ -250,7 +192,7 @@ namespace PasswordManager.Classes
 					Console.WriteLine($"  [{i + 1}] {pwd.PasswordType} - {pwd.Username}");
 				}
 				Console.WriteLine();
-				if (!ConfirmAction("Are you sure you want to delete these passwords?"))
+				if (!UI.ConfirmAction("Are you sure you want to delete these passwords?"))
 				{
 					UI.PrintInfo("The operation has been cancelled.");
 					UI.PauseMenu();
@@ -275,22 +217,16 @@ namespace PasswordManager.Classes
 			{
 				UI.PrintWarning("IMPORTANT: Losing your master password means losing access to all passwords!");
 				Console.WriteLine();
-				if (!ConfirmAction("Do you want to continue?"))
+				if (!UI.ConfirmAction("Do you want to continue?"))
 				{
 					UI.PrintInfo("The operation has been cancelled.");
 					UI.PauseMenu();
 					return;
 				}
 				Console.Write("  Enter the new master password: ");
-				string newMaster = Program.GetPassword();
-				if (string.IsNullOrWhiteSpace(newMaster))
-				{
-					UI.PrintError("Password cannot be empty!");
-					UI.PauseMenu();
-					return;
-				}
+				string newMaster = UI.GetPassword();
 				Console.Write("  Repeat master password: ");
-				string confirmMaster = Program.GetPassword();
+				string confirmMaster = UI.GetPassword();
 				if (newMaster != confirmMaster)
 				{
 					UI.PrintError("Passwords don't match!");
@@ -335,7 +271,7 @@ namespace PasswordManager.Classes
 				}
 				UI.PrintSuccess($"Results found: {results.Count}");
 				Console.WriteLine();
-				for (int i = 0; i < results.Count; i++) DisplayPasswordEntry(results[i], i + 1);
+				for (int i = 0; i < results.Count; i++) UI.DisplayPasswordEntry(results[i], i + 1);
 				UI.PauseMenu();
 			}
 			catch (Exception ex)
@@ -345,58 +281,8 @@ namespace PasswordManager.Classes
 			}
 		}
 
-		private (string service, string username, string password) GetPasswordInput()
-		{
-			Console.Write("  Enter service: ");
-			string? service = UI.GetLine();
-			Console.Write("  Enter username: ");
-			string? username = UI.GetLine();
-			Console.Write("  Enter password: ");
-			string password = UI.GetLine();
-			Console.WriteLine();
-			return (service ?? string.Empty, username ?? string.Empty, password);
-		}
-
-		private bool ValidatePasswordInput(string service, string username, string password)
-		{
-			if (string.IsNullOrWhiteSpace(service))
-			{
-				UI.PrintError("The service cannot be empty!");
-				return false;
-			}
-			if (string.IsNullOrWhiteSpace(username))
-			{
-				UI.PrintError("Username cannot be empty!");
-				return false;
-			}
-			if (string.IsNullOrWhiteSpace(password))
-			{
-				UI.PrintError("Password cannot be empty!");
-				return false;
-			}
-			return true;
-		}
-
 		private bool PasswordExists(string service, string username) =>
 			PasswordsManager.PasswordsList.Any(p => p.PasswordType == service && p.Username == username);
-
-		private bool ConfirmAction(string message)
-		{
-			Console.Write($"{message} (y/n): ");
-			bool result = false;
-			while (true)
-			{
-				var key = Console.ReadKey(true).Key;
-				if (key == ConsoleKey.Y)
-				{
-					result = true;
-					break;
-				}
-				if (key == ConsoleKey.N) break;
-			}
-			Console.WriteLine();
-			return result;
-		}
 		
 		private void SaveAndNotify(string message)
 		{
