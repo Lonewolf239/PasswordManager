@@ -41,9 +41,9 @@ namespace PasswordManager.Classes
 			Console.WriteLine("║ [3] Search                                ║");
 			Console.WriteLine("║ [4] Delete Password                       ║");
 			Console.WriteLine("║ [5] Change Master Password                ║");
-			Console.WriteLine("║ [6] Sync                                  ║");
-			Console.WriteLine("║ [7] View JSON                             ║");
-			Console.WriteLine("║ [8] About                                 ║");
+			//Console.WriteLine("║ [6] Sync                                  ║");
+			Console.WriteLine("║ [6] View JSON                             ║");
+			Console.WriteLine("║ [7] About                                 ║");
 			Console.WriteLine("║ [ESC] Exit                                ║");
 			Console.WriteLine("╚═══════════════════════════════════════════╝");
 			Console.WriteLine();
@@ -68,13 +68,13 @@ namespace PasswordManager.Classes
 				case ConsoleKey.D5 or ConsoleKey.NumPad5:
 					ChangeMasterPassword();
 					break;
+				//case ConsoleKey.D6 or ConsoleKey.NumPad6:
+				//	SyncPasswords();
+				//	break;
 				case ConsoleKey.D6 or ConsoleKey.NumPad6:
-					SyncPasswords();
-					break;
-				case ConsoleKey.D7 or ConsoleKey.NumPad7:
 					ViewJson();
 					break;
-				case ConsoleKey.D8 or ConsoleKey.NumPad8:
+				case ConsoleKey.D7 or ConsoleKey.NumPad7:
 					ShowAbout();
 					break;
 				case ConsoleKey.Escape:
