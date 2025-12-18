@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using System.Threading;
+using PasswordManager.Classes;
 using System.Runtime.InteropServices;
 
 namespace PasswordManager

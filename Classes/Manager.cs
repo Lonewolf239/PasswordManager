@@ -3,7 +3,7 @@ using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 
-namespace PasswordManager
+namespace PasswordManager.Classes
 {
 	public class Manager
 	{

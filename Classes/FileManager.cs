@@ -3,7 +3,7 @@ using System.IO;
 using System.Text;
 using System.Security.Cryptography;
 
-namespace PasswordManager
+namespace PasswordManager.Classes
 {
 	public class FileManager
 	{

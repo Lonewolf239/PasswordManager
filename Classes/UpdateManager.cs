@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
-namespace PasswordManager
+namespace PasswordManager.Classes
 {
 	public static class UpdateManager
 	{
