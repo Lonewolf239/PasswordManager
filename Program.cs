@@ -1,73 +1,69 @@
-﻿using System;
-using System.IO;
-using System.Text;
-using System.Threading;
+﻿using System.Runtime.InteropServices;
 using PasswordManager.Classes;
-using System.Runtime.InteropServices;
 
 namespace PasswordManager
 {
-	public static class Program
-	{
-		public static string Version = "1.0";
+    public static class Program
+    {
+        public static string Version = "1.1";
+        private static long LastActivityTicks = DateTime.Now.Ticks;
+        private const int SessionTimeoutSeconds = 900;
 
-		private static void OnApplicationClosing(Passwords passwords)
-		{
-			Console.Clear();
-			Console.CursorVisible = true;
-			FileManager.Save(passwords.ToString());
-		}
+        private static void OnApplicationClosing(Passwords passwords)
+        {
+            UI.Clear();
+            Console.CursorVisible = true;
+            FileManager.Save(passwords.ToString());
+        }
 
-		private static async Task Main()
-		{
-			Console.Clear();
-			Console.CursorVisible = false;
-			if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-			{
-				Console.WriteLine("This application is only supported on Linux.");
-				return;
-			}
-			await UpdateManager.CheckAndUpdate();
-			bool firstStart = false;
-			string data = FileManager.Read();
-			Passwords passwords = new();
-			if (data == "[]") firstStart = true;
-			else passwords = new(data);
-			int attemps = 0;
-			while (true)
-			{
-				Console.Clear();
-				Console.Write("Enter password: ");
-				string password = UI.GetPassword(!firstStart);
-				if (firstStart)
-				{
-					passwords.ChangeMainPassword(password);
-					FileManager.Save(passwords.ToString());
-					break;
-				}
-				if (!passwords.CheckMainPassword(password))
-				{
-					Console.WriteLine("Incorrect password!");
-					attemps++;
-					if (attemps == 3)
-					{
-						if (UI.ConfirmAction("\nWARNING: This action will erase all data.\nDo you want to restore access?"))
-						{
-							Console.Write("Enter new password: ");
-							password = UI.GetPassword(false);
-							passwords.Clear(password);
-							FileManager.Save(passwords.ToString());
-							break;
-						}
-						attemps = 0;
-					}
-					else Thread.Sleep(500);
-				}
-				else break;
-			}
-			AppDomain.CurrentDomain.ProcessExit += (s, e) => OnApplicationClosing(passwords);
-			Manager manager = new(passwords);
-			manager.MainMenu();
-		}
-	}
+        private static void OnKeyPressed() => Interlocked.Exchange(ref LastActivityTicks, DateTime.Now.Ticks);
+
+        private static async Task Main()
+        {
+            UI.Clear();
+            Console.CursorVisible = false;
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                UI.PrintError("This application is only supported on Linux.");
+                UI.Pause();
+                return;
+            }
+            await UpdateManager.CheckAndUpdate();
+            string data = FileManager.Read();
+            Passwords passwords = new();
+            bool firstStart = false;
+            if (data == "[]") firstStart = true;
+            else passwords = new(data);
+            AppDomain.CurrentDomain.ProcessExit += (sender, e) => OnApplicationClosing(passwords);
+            while (true)
+            {
+                UI.LogIn(passwords, firstStart);
+                firstStart = false;
+                OnKeyPressed();
+                using (var sessionCts = new CancellationTokenSource())
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        while (!sessionCts.Token.IsCancellationRequested)
+                        {
+                            await Task.Delay(1000, sessionCts.Token);
+                            long lastTicks = Interlocked.Read(ref LastActivityTicks);
+                            if ((DateTime.Now - new DateTime(lastTicks)).TotalSeconds >= SessionTimeoutSeconds)
+                            {
+                                sessionCts.Cancel();
+                                break;
+                            }
+                        }
+                    });
+                    Manager manager = new(passwords, sessionCts.Token);
+                    manager.KeyPressed += OnKeyPressed;
+                    if (manager.MainMenu())
+                    {
+                        sessionCts.Cancel();
+                        break;
+                    }
+                }
+            }
+        }
+    }
 }

@@ -2,7 +2,7 @@
 
 A secure password manager with AES-256 encryption.
 
-**Version:** 1.0
+**Version:** 1.1
 **Platform:** Linux
 
 ---
