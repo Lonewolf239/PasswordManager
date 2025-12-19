@@ -1,7 +1,12 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace PasswordManager.Classes
 {
+    [JsonSourceGenerationOptions(WriteIndented = true)]
+    [JsonSerializable(typeof(PasswordsDto))]
+    internal partial class PasswordJsonContext : JsonSerializerContext { }
+
     public class PasswordsDto
     {
         public string mainPassword { get; set; } = "";
@@ -26,7 +31,7 @@ namespace PasswordManager.Classes
             PasswordsList = [];
             try
             {
-                var dto = JsonSerializer.Deserialize<PasswordsDto>(input);
+                var dto = JsonSerializer.Deserialize(input, PasswordJsonContext.Default.PasswordsDto);
                 if (dto != null)
                 {
                     MainPassword = dto.mainPassword;
@@ -57,7 +62,7 @@ namespace PasswordManager.Classes
                 mainPassword = MainPassword,
                 passwords = passwordsByType
             };
-            return JsonSerializer.Serialize(obj, new JsonSerializerOptions { WriteIndented = true });
+            return JsonSerializer.Serialize(obj, PasswordJsonContext.Default.PasswordsDto);
         }
 
         public void Append(PasswordData password)
@@ -86,7 +91,7 @@ namespace PasswordManager.Classes
         {
             try
             {
-                var dto = JsonSerializer.Deserialize<PasswordsDto>(json);
+                var dto = JsonSerializer.Deserialize<PasswordsDto>(json, PasswordJsonContext.Default.PasswordsDto);
                 if (dto != null && dto.passwords != null)
                 {
                     foreach (var typeGroup in dto.passwords)
